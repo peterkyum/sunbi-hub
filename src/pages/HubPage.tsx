@@ -97,22 +97,6 @@ export function HubPage() {
     setShowAdmin(true)
   }
 
-  const handleRefresh = () => {
-    if (activeApp && iframeRefs.current[activeApp]) {
-      setIframeStatus(prev => ({ ...prev, [activeApp]: 'loading' }))
-      startLoadTimeout(activeApp)
-      const iframe = iframeRefs.current[activeApp]!
-      iframe.src = iframe.src
-    }
-  }
-
-  const handleOpenExternal = () => {
-    if (activeApp) {
-      const app = ALL_APPS.find(a => a.id === activeApp)
-      if (app) window.open(app.url, '_blank', 'noopener')
-    }
-  }
-
   const handleRetry = () => {
     if (!activeApp) return
     setIframeStatus(prev => ({ ...prev, [activeApp]: 'loading' }))
