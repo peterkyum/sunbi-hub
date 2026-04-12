@@ -15,19 +15,30 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-const SESSION_CHECK_INTERVAL = 10_000 // 10초마다 DB 세션 검증
-
-const generateSessionId = (userId: string): string => {
-  return `${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+// ──────────────────────────────────────────────────────────────
+// 같은 브라우저 내 모든 탭이 공유하는 "탭 그룹 ID"
+// 탭 > sessionStorage(탭마다 고유) vs localStorage(탭 간 공유)
+// 브라우저 인스턴스 단위 식별: localStorage의 browser-instance-id 사용
+// ──────────────────────────────────────────────────────────────
+const getBrowserInstanceId = (): string => {
+  let id = localStorage.getItem('sunbi-browser-instance')
+  if (!id) {
+    id = `browser-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    localStorage.setItem('sunbi-browser-instance', id)
+  }
+  return id
 }
+
+const SESSION_CHECK_INTERVAL = 15_000 // 15초마다 DB 세션 검증
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [sessionId, setSessionId] = useState<string | null>(null)
   const [kickedOut, setKickedOut] = useState(false)
   const sessionCheckRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // 현재 브라우저 인스턴스 ID (같은 브라우저 내 탭들은 동일)
+  const browserInstanceId = useRef(getBrowserInstanceId())
 
   const fetchProfile = useCallback(async (userId: string): Promise<UserProfile> => {
     const { data, error } = await supabase
@@ -57,42 +68,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return fetched
   }, [])
 
-  // DB에 세션 ID 저장
-  const saveSessionToDb = useCallback(async (userId: string, newSessionId: string) => {
+  // DB에 브라우저 인스턴스 ID 저장 (기기 단위 중복 로그인 방지)
+  const saveSessionToDb = useCallback(async (userId: string, instanceId: string) => {
     await supabase
       .from('user_roles')
-      .update({ active_session_id: newSessionId })
+      .update({ active_session_id: instanceId })
       .eq('user_id', userId)
   }, [])
 
-  // DB에서 세션 ID 검증 (다른 기기/브라우저 중복 로그인 감지)
-  const verifySession = useCallback(async (userId: string, localSessionId: string) => {
+  // DB에서 세션 검증 — 같은 브라우저 인스턴스면 OK, 다른 브라우저/기기면 강제 로그아웃
+  const verifySession = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from('user_roles')
       .select('active_session_id')
       .eq('user_id', userId)
       .single()
 
-    if (data && data.active_session_id && data.active_session_id !== localSessionId) {
-      // 다른 곳에서 로그인됨 → 강제 로그아웃
+    const myInstanceId = browserInstanceId.current
+    if (data && data.active_session_id && data.active_session_id !== myInstanceId) {
+      // 다른 브라우저/기기에서 로그인됨 → 강제 로그아웃
       setKickedOut(true)
       await supabase.auth.signOut()
       setProfile(null)
-      setSessionId(null)
       return false
     }
     return true
   }, [])
-
-  // 주기적 세션 검증 시작/중지
-  const startSessionCheck = useCallback((userId: string, localSessionId: string) => {
-    if (sessionCheckRef.current) {
-      clearInterval(sessionCheckRef.current)
-    }
-    sessionCheckRef.current = setInterval(() => {
-      verifySession(userId, localSessionId)
-    }, SESSION_CHECK_INTERVAL)
-  }, [verifySession])
 
   const stopSessionCheck = useCallback(() => {
     if (sessionCheckRef.current) {
@@ -101,24 +102,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const startSessionCheck = useCallback((userId: string) => {
+    stopSessionCheck()
+    sessionCheckRef.current = setInterval(() => {
+      verifySession(userId)
+    }, SESSION_CHECK_INTERVAL)
+  }, [verifySession, stopSessionCheck])
+
   // 초기 세션 복원
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user)
-        const storedSessionId = localStorage.getItem(`session-${session.user.id}`)
 
-        if (storedSessionId) {
-          // DB에서 세션 유효성 확인
-          const valid = await verifySession(session.user.id, storedSessionId)
-          if (valid) {
-            setSessionId(storedSessionId)
-            startSessionCheck(session.user.id, storedSessionId)
-            await fetchProfile(session.user.id)
-          }
-        } else {
-          // 로컬 세션 ID 없음 → 로그아웃
-          await supabase.auth.signOut()
+        // Supabase 세션이 유효하면 → 바로 프로필 로드 (탭 간 공유 가능)
+        // DB에서 세션 검증 (다른 기기 중복 로그인 여부만 확인)
+        const valid = await verifySession(session.user.id)
+        if (valid) {
+          // 현재 브라우저 인스턴스를 DB에 등록 (아직 없는 경우 덮어씀)
+          await saveSessionToDb(session.user.id, browserInstanceId.current)
+          startSessionCheck(session.user.id)
+          await fetchProfile(session.user.id)
         }
       }
       setLoading(false)
@@ -128,7 +132,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null)
       if (!session?.user) {
         setProfile(null)
-        setSessionId(null)
         stopSessionCheck()
       }
     })
@@ -139,40 +142,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 같은 브라우저 다른 탭 감지 (localStorage 이벤트)
-  useEffect(() => {
-    if (!user?.id || !sessionId) return
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === `session-${user.id}` && e.newValue && e.newValue !== sessionId) {
-        setKickedOut(true)
-        supabase.auth.signOut().then(() => {
-          setProfile(null)
-          setSessionId(null)
-          stopSessionCheck()
-        })
-      }
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
-  }, [user?.id, sessionId, stopSessionCheck])
-
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) return { error: error.message }
 
     if (data.user) {
-      const newSessionId = generateSessionId(data.user.id)
-      setSessionId(newSessionId)
-      localStorage.setItem(`session-${data.user.id}`, newSessionId)
-
-      // DB에 세션 저장 → 다른 기기의 기존 세션 무효화
-      await saveSessionToDb(data.user.id, newSessionId)
-
-      // 주기적 세션 검증 시작
-      startSessionCheck(data.user.id, newSessionId)
-
+      // 현재 브라우저 인스턴스 ID를 DB에 저장 → 다른 기기/브라우저의 기존 세션 무효화
+      await saveSessionToDb(data.user.id, browserInstanceId.current)
+      startSessionCheck(data.user.id)
       await fetchProfile(data.user.id)
     }
 
@@ -182,8 +159,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     stopSessionCheck()
     if (user) {
-      localStorage.removeItem(`session-${user.id}`)
-      // DB 세션도 제거
       await supabase
         .from('user_roles')
         .update({ active_session_id: null })
@@ -191,7 +166,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     await supabase.auth.signOut()
     setProfile(null)
-    setSessionId(null)
   }
 
   const clearKickedOut = () => setKickedOut(false)

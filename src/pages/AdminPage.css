@@ -1,8 +1,9 @@
 .admin-bg {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: #F4F4F4;
   color: #191F28;
   font-family: 'SandollGukdaeTteokbokki', sans-serif;
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 .admin-header {
@@ -28,6 +29,9 @@
   font-family: 'SandollGukdaeTteokbokki', sans-serif;
   cursor: pointer;
   transition: all 0.2s;
+  min-height: 40px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .admin-back-btn:hover {
@@ -66,10 +70,12 @@
   border-radius: 16px;
   padding: 12px 20px;
   color: #191F28;
-  font-size: 14px;
+  font-size: 16px; /* iOS 자동 줌 방지 */
   font-family: 'SandollGukdaeTteokbokki', sans-serif;
   outline: none;
   transition: border-color 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .admin-search-input:focus {
@@ -269,6 +275,7 @@
 
   .admin-main {
     padding: 16px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   }
 
   .admin-search-input {
