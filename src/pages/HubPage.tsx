@@ -20,13 +20,29 @@ export function HubPage() {
   const [activeApp, setActiveApp] = useState<AppId | null>(null)
   const [loadedApps, setLoadedApps] = useState<Set<AppId>>(new Set())
   const [iframeStatus, setIframeStatus] = useState<Record<string, 'loading' | 'ready' | 'error'>>({})
+  const [iframeSrcs, setIframeSrcs] = useState<Record<string, string>>({})
   const iframeRefs = useRef<Record<string, HTMLIFrameElement | null>>({})
   const timeoutRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  const ssoResolvedRef = useRef(false)
 
   const allowedApps = useMemo(
     () => ALL_APPS.filter(app => profile?.allowed_apps.includes(app.id)),
     [profile?.allowed_apps]
   )
+
+  // 허브 토큰을 한 번만 가져와서 캐시
+  useEffect(() => {
+    if (ssoResolvedRef.current) return
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return
+      ssoResolvedRef.current = true
+      const srcs: Record<string, string> = {}
+      for (const app of ALL_APPS) {
+        srcs[app.id] = `${app.url}#hub_token=${session.access_token}`
+      }
+      setIframeSrcs(srcs)
+    })
+  }, [])
 
   useEffect(() => {
     if (!activeApp && allowedApps.length > 0) {
@@ -54,33 +70,10 @@ export function HubPage() {
     }, IFRAME_LOAD_TIMEOUT_MS)
   }, [])
 
-  // iframe 로드 후 Supabase 세션 토큰 전달 (SSO) — 재시도 포함
-  const sendTokenToIframe = useCallback(async (appId: string) => {
-    const iframe = iframeRefs.current[appId]
-    if (!iframe?.contentWindow) return
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
-    const app = ALL_APPS.find(a => a.id === appId)
-    if (!app) return
-
-    const message = {
-      type: 'SUNBI_HUB_SESSION',
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-    }
-
-    // 즉시 전송 + 500ms, 1500ms 후 재전송 (iframe JS 초기화 타이밍 대응)
-    const send = () => iframe.contentWindow?.postMessage(message, app.url)
-    send()
-    setTimeout(send, 500)
-    setTimeout(send, 1500)
-  }, [])
-
   const handleIframeLoad = useCallback((appId: string) => {
     if (timeoutRefs.current[appId]) clearTimeout(timeoutRefs.current[appId])
     setIframeStatus(prev => ({ ...prev, [appId]: 'ready' }))
-    sendTokenToIframe(appId)
-  }, [sendTokenToIframe])
+  }, [])
 
   const handleIframeError = useCallback((appId: string) => {
     if (timeoutRefs.current[appId]) clearTimeout(timeoutRefs.current[appId])
@@ -224,7 +217,7 @@ export function HubPage() {
               key={app.id}
               ref={el => { iframeRefs.current[app.id] = el }}
               className="hub-iframe"
-              src={app.url}
+              src={iframeSrcs[app.id] || app.url}
               title={app.name}
               style={{
                 display: activeApp === app.id ? 'block' : 'none',
