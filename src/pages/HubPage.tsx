@@ -172,10 +172,6 @@ export function HubPage() {
             {ALL_APPS.find(a => a.id === activeApp)?.icon}{' '}
             {ALL_APPS.find(a => a.id === activeApp)?.name}
           </span>
-          <div className="hub-toolbar-actions">
-            <button className="hub-tool-btn" onClick={handleRefresh} aria-label="새로고침" title="새로고침">🔄</button>
-            <button className="hub-tool-btn" onClick={handleOpenExternal} aria-label="새 창에서 열기" title="새 창에서 열기">↗️</button>
-          </div>
         </div>
       )}
 
