@@ -14,6 +14,10 @@ const ROLE_LABEL: Record<string, string> = {
 
 const IFRAME_LOAD_TIMEOUT_MS = 15_000
 
+// iOS Safari는 크로스 오리진 iframe에서 localStorage(Supabase 세션)를 차단함.
+// 모바일에서는 새 탭으로 열어 first-party 컨텍스트에서 SSO 처리
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
 export function HubPage() {
   const { profile, signOut } = useAuth()
   const [showAdmin, setShowAdmin] = useState(false)
@@ -81,6 +85,12 @@ export function HubPage() {
   }, [])
 
   const handleTabClick = (app: HubApp) => {
+    // 모바일: Safari ITP로 인해 iframe에서 localStorage 차단 → 새 탭으로 열기
+    if (isMobile) {
+      const ssoUrl = iframeSrcs[app.id] || app.url
+      window.open(ssoUrl, '_blank', 'noopener')
+      return
+    }
     setActiveApp(app.id)
     setShowAdmin(false)
     if (!loadedApps.has(app.id)) {
@@ -157,7 +167,26 @@ export function HubPage() {
         </div>
       )}
 
-      {/* iframe 컨테이너 */}
+      {/* 모바일: iframe 대신 앱 카드 런처 */}
+      {isMobile ? (
+        <div className="hub-mobile-launcher">
+          <p className="hub-mobile-launcher-hint">탭을 눌러 앱을 실행하세요</p>
+          <div className="hub-mobile-app-grid">
+            {allowedApps.map(app => (
+              <button
+                key={app.id}
+                className="hub-mobile-app-card"
+                onClick={() => handleTabClick(app)}
+                style={{ '--app-color': app.color } as React.CSSProperties}
+              >
+                <span className="hub-mobile-app-icon">{app.icon}</span>
+                <span className="hub-mobile-app-name">{app.name}</span>
+                <span className="hub-mobile-app-arrow">→</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
       <div className="hub-iframe-wrap">
         {allowedApps.length === 0 && (
           <div className="hub-empty-state">
@@ -211,6 +240,7 @@ export function HubPage() {
           )
         ))}
       </div>
+      )}
 
       {/* 모바일 바텀 내비 */}
       <nav className="hub-bottom-nav" aria-label="앱 탐색">

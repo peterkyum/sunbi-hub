@@ -310,6 +310,79 @@
   overflow-y: auto;
 }
 
+/* ─── 모바일 앱 카드 런처 ─── */
+/* iOS Safari ITP: cross-origin iframe localStorage 차단 → 새 탭으로 열기 */
+.hub-mobile-launcher {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 24px 20px;
+  overflow-y: auto;
+}
+
+.hub-mobile-launcher-hint {
+  font-size: 13px;
+  color: #8B95A1;
+  font-weight: 600;
+  margin: 0 0 20px;
+  letter-spacing: -0.2px;
+}
+
+.hub-mobile-app-grid {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+}
+
+.hub-mobile-app-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  background: #fff;
+  border: 1.5px solid #F2F4F6;
+  border-radius: 20px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.hub-mobile-app-card:active {
+  transform: scale(0.97);
+  background: #FAFAFA;
+  border-color: var(--app-color, #8B6914);
+}
+
+.hub-mobile-app-icon {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.hub-mobile-app-name {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 800;
+  color: #191F28;
+  letter-spacing: -0.4px;
+  font-family: 'SandollGukdaeTteokbokki', sans-serif;
+}
+
+.hub-mobile-app-arrow {
+  font-size: 18px;
+  color: #B0B8C1;
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
 /* ─── Mobile bottom nav (hidden on desktop) ─── */
 .hub-bottom-nav {
   display: none;
