@@ -15,7 +15,7 @@ function AppContent() {
         alignItems: 'center',
         justifyContent: 'center',
         gap: '16px',
-        fontFamily: 'Pretendard, sans-serif',
+        fontFamily: 'SandollGukdaeTteokbokki, sans-serif',
       }}>
         <div style={{
           fontSize: '48px',

@@ -45,7 +45,7 @@
 }
 
 .login-title {
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'SandollGukdaeTteokbokki', sans-serif;
   font-size: 28px;
   font-weight: 800;
   color: #E8A020;
@@ -85,7 +85,7 @@
   padding: 14px 16px;
   color: #fff;
   font-size: 15px;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'SandollGukdaeTteokbokki', sans-serif;
   outline: none;
   transition: border-color 0.2s;
   width: 100%;
@@ -151,7 +151,7 @@
   color: #fff;
   font-size: 16px;
   font-weight: 700;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'SandollGukdaeTteokbokki', sans-serif;
   cursor: pointer;
   transition: opacity 0.2s, transform 0.15s;
 }

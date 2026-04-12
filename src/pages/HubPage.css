@@ -8,7 +8,7 @@
   flex-direction: column;
   background: #0f0c08;
   color: #fff;
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'SandollGukdaeTteokbokki', -apple-system, BlinkMacSystemFont, sans-serif;
   overflow: hidden;
 }
 
@@ -82,7 +82,7 @@
   color: rgba(255,255,255,0.55);
   font-size: 13px;
   font-weight: 600;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'SandollGukdaeTteokbokki', sans-serif;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -132,7 +132,7 @@
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'SandollGukdaeTteokbokki', sans-serif;
   cursor: pointer;
   border: 1px solid transparent;
   transition: all 0.2s;
@@ -270,7 +270,7 @@
   color: #E8A020;
   font-size: 14px;
   font-weight: 600;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'SandollGukdaeTteokbokki', sans-serif;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -382,7 +382,7 @@
     color: rgba(255,255,255,0.45);
     cursor: pointer;
     transition: color 0.2s;
-    font-family: 'Pretendard', sans-serif;
+    font-family: 'SandollGukdaeTteokbokki', sans-serif;
   }
 
   .hub-bottom-tab.active {

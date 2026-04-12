@@ -2,7 +2,7 @@
   min-height: 100vh;
   background: #0f0c08;
   color: #fff;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'SandollGukdaeTteokbokki', sans-serif;
 }
 
 .admin-header {
@@ -24,7 +24,7 @@
   padding: 8px 16px;
   color: rgba(255,255,255,0.7);
   font-size: 13px;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'SandollGukdaeTteokbokki', sans-serif;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -65,7 +65,7 @@
   padding: 10px 16px;
   color: #fff;
   font-size: 14px;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'SandollGukdaeTteokbokki', sans-serif;
   outline: none;
   transition: border-color 0.2s;
 }
@@ -165,7 +165,7 @@
   padding: 6px 10px;
   color: #fff;
   font-size: 13px;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'SandollGukdaeTteokbokki', sans-serif;
   outline: none;
   cursor: pointer;
   min-width: 130px;

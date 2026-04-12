@@ -17,7 +17,7 @@
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'SandollGukdaeTteokbokki', sans-serif;
   backdrop-filter: blur(16px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   animation: toast-in 0.3s ease-out, toast-out 0.3s ease-in 2.7s forwards;

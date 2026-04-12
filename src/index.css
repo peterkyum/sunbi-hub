@@ -1,3 +1,19 @@
+@font-face {
+  font-family: 'SandollGukdaeTteokbokki';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/SDKukdetopokki-aLt00.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SandollGukdaeTteokbokki';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/SDKukdetopokki.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -5,12 +21,12 @@
 }
 
 body {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'SandollGukdaeTteokbokki', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: #0f0c08;
   color: #fff;
   -webkit-font-smoothing: antialiased;
 }
 
-button {
+button, input, select, textarea {
   font-family: inherit;
 }
