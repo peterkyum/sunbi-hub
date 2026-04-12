@@ -1,0 +1,5 @@
+# sunbi-hub
+node_modules
+dist
+.env.local
+.env
