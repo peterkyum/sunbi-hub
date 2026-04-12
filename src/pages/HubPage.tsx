@@ -26,10 +26,8 @@ export function HubPage() {
   const ssoResolvedRef = useRef(false)
 
   const allowedApps = useMemo(
-    () => (profile?.role === 'admin' || profile?.role === 'staff')
-      ? ALL_APPS
-      : ALL_APPS.filter(app => profile?.allowed_apps.includes(app.id)),
-    [profile?.allowed_apps, profile?.role]
+    () => ALL_APPS.filter(app => profile?.allowed_apps.includes(app.id)),
+    [profile?.allowed_apps]
   )
 
   // 허브 토큰을 한 번만 가져와서 캐시
