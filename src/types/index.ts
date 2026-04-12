@@ -52,7 +52,7 @@ export const ALL_APPS: HubApp[] = [
   },
   {
     id: 'sunbi-store-abb',
-    name: '매장 정보',
+    name: '점주 전용',
     description: '가맹점 정보 및 약어 관리',
     icon: '🏪',
     url: 'https://sunbi-store-abb.vercel.app',
