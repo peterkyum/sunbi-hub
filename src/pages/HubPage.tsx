@@ -266,6 +266,14 @@ export function HubPage() {
             <span className="hub-bottom-tab-label">관리</span>
           </button>
         )}
+        <button
+          className="hub-bottom-tab hub-bottom-tab-logout"
+          onClick={signOut}
+          aria-label="로그아웃"
+        >
+          <span className="hub-bottom-tab-icon">🚪</span>
+          <span className="hub-bottom-tab-label">로그아웃</span>
+        </button>
       </nav>
     </div>
   )

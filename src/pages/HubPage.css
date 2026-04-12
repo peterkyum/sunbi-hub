@@ -480,4 +480,16 @@
     letter-spacing: -0.2px;
     line-height: 1;
   }
+
+  /* 로그아웃 버튼 — 빨간 강조 */
+  .hub-bottom-tab-logout {
+    color: #FF3B30;
+    opacity: 0.75;
+  }
+
+  .hub-bottom-tab-logout:active {
+    background: rgba(255, 59, 48, 0.08);
+    color: #FF3B30;
+    opacity: 1;
+  }
 }
