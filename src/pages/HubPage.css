@@ -162,16 +162,16 @@
   color: #6B4F0E;
 }
 
-.signout-btn {
+.settings-btn {
   background: #F2F4F6;
   color: #8B95A1;
   border-color: #E5E8EB;
 }
 
-.signout-btn:hover {
-  background: rgba(255, 59, 48, 0.06);
-  color: #FF3B30;
-  border-color: rgba(255, 59, 48, 0.2);
+.settings-btn:hover, .settings-btn.active {
+  background: rgba(139, 105, 20, 0.08);
+  color: #8B6914;
+  border-color: rgba(139, 105, 20, 0.15);
 }
 
 /* ─── Toolbar ─── */
@@ -310,25 +310,98 @@
   overflow-y: auto;
 }
 
-/* ─── 모바일 앱 카드 런처 ─── */
-/* iOS Safari ITP: cross-origin iframe localStorage 차단 → 새 탭으로 열기 */
-.hub-mobile-launcher {
+/* ─── 앱 런처 ─── */
+.hub-launcher {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 24px 20px;
+  padding: 40px 20px;
   overflow-y: auto;
 }
 
-.hub-mobile-launcher-hint {
-  font-size: 13px;
+.hub-launcher-hint {
+  font-size: 14px;
   color: #8B95A1;
   font-weight: 600;
-  margin: 0 0 20px;
+  margin: 0 0 24px;
   letter-spacing: -0.2px;
 }
+
+.hub-app-grid {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 560px;
+}
+
+.hub-app-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: #fff;
+  border: 1.5px solid #F2F4F6;
+  border-radius: 20px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  font-family: 'SandollGukdaeTteokbokki', sans-serif;
+}
+
+.hub-app-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+  border-color: var(--app-color, #8B6914);
+}
+
+.hub-app-card:active {
+  transform: scale(0.98);
+  background: #FAFAFA;
+}
+
+.hub-app-icon {
+  font-size: 36px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.hub-app-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hub-app-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: #191F28;
+  letter-spacing: -0.4px;
+}
+
+.hub-app-desc {
+  font-size: 13px;
+  color: #8B95A1;
+  font-weight: 500;
+}
+
+.hub-app-arrow {
+  font-size: 20px;
+  color: #B0B8C1;
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
+/* 모바일 호환 (기존 클래스명 유지) */
+.hub-mobile-launcher { display: none; }
+.hub-mobile-launcher-hint { display: none; }
 
 .hub-mobile-app-grid {
   width: 100%;
@@ -481,15 +554,125 @@
     line-height: 1;
   }
 
-  /* 로그아웃 버튼 — 빨간 강조 */
-  .hub-bottom-tab-logout {
-    color: #FF3B30;
-    opacity: 0.75;
-  }
+}
 
-  .hub-bottom-tab-logout:active {
-    background: rgba(255, 59, 48, 0.08);
-    color: #FF3B30;
-    opacity: 1;
-  }
+/* ─── Dark mode ─── */
+[data-theme="dark"] .hub-bg {
+  background: #1A1A1A;
+  color: #E5E5E5;
+}
+
+[data-theme="dark"] .hub-nav {
+  background: #242424;
+  border-bottom-color: #333;
+}
+
+[data-theme="dark"] .hub-brand-name {
+  color: #C99A2E;
+}
+
+[data-theme="dark"] .hub-brand-role {
+  background: #333;
+  color: #999;
+}
+
+[data-theme="dark"] .hub-tab {
+  color: #777;
+}
+
+[data-theme="dark"] .hub-tab:hover {
+  color: #aaa;
+  background: #2A2A2A;
+}
+
+[data-theme="dark"] .hub-tab.active {
+  color: #E5E5E5;
+  background: rgba(201, 154, 46, 0.12);
+}
+
+[data-theme="dark"] .hub-tab.active::after {
+  background: #C99A2E;
+}
+
+[data-theme="dark"] .hub-nav-btn {
+  border-color: #444;
+}
+
+[data-theme="dark"] .admin-btn {
+  background: rgba(201, 154, 46, 0.12);
+  color: #C99A2E;
+  border-color: rgba(201, 154, 46, 0.2);
+}
+
+[data-theme="dark"] .settings-btn {
+  background: #2A2A2A;
+  color: #999;
+  border-color: #444;
+}
+
+[data-theme="dark"] .settings-btn:hover,
+[data-theme="dark"] .settings-btn.active {
+  background: rgba(201, 154, 46, 0.12);
+  color: #C99A2E;
+}
+
+[data-theme="dark"] .hub-toolbar {
+  background: #242424;
+  border-bottom-color: #333;
+}
+
+[data-theme="dark"] .hub-iframe-overlay {
+  background: #1A1A1A;
+}
+
+[data-theme="dark"] .hub-iframe-overlay-title {
+  color: #E5E5E5;
+}
+
+[data-theme="dark"] .hub-bottom-nav {
+  background: #242424;
+  border-top-color: #333;
+  box-shadow: 0 -1px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .hub-bottom-tab {
+  color: #666;
+}
+
+[data-theme="dark"] .hub-bottom-tab:active {
+  background: #2A2A2A;
+}
+
+[data-theme="dark"] .hub-bottom-tab.active {
+  color: #C99A2E;
+}
+
+[data-theme="dark"] .hub-mobile-app-card {
+  background: #242424;
+  border-color: #333;
+}
+
+[data-theme="dark"] .hub-mobile-app-card:active {
+  background: #2A2A2A;
+}
+
+[data-theme="dark"] .hub-mobile-app-name {
+  color: #E5E5E5;
+}
+
+[data-theme="dark"] .hub-app-card {
+  background: #242424;
+  border-color: #333;
+}
+
+[data-theme="dark"] .hub-app-card:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .hub-app-card:active {
+  background: #2A2A2A;
+}
+
+[data-theme="dark"] .hub-app-name {
+  color: #E5E5E5;
 }

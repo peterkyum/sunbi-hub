@@ -1,8 +1,9 @@
 import { useAuth } from '../context/AuthContext'
-import { supabase } from '../lib/supabase'
 import { ALL_APPS, HubApp, AppId } from '../types'
-import { AdminPage } from './AdminPage'
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { lazy, Suspense, useState, useRef, useEffect, useMemo, useCallback } from 'react'
+
+const AdminPage = lazy(() => import('./AdminPage').then(m => ({ default: m.AdminPage })))
+const SettingsPage = lazy(() => import('./SettingsPage').then(m => ({ default: m.SettingsPage })))
 import './HubPage.css'
 
 const ROLE_LABEL: Record<string, string> = {
@@ -14,40 +15,21 @@ const ROLE_LABEL: Record<string, string> = {
 
 const IFRAME_LOAD_TIMEOUT_MS = 15_000
 
-// iOS Safari는 크로스 오리진 iframe에서 localStorage(Supabase 세션)를 차단함.
-// 모바일에서는 새 탭으로 열어 first-party 컨텍스트에서 SSO 처리
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-
 export function HubPage() {
-  const { profile, signOut } = useAuth()
+  const { profile } = useAuth()
   const [showAdmin, setShowAdmin] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [activeApp, setActiveApp] = useState<AppId | null>(null)
   const [loadedApps, setLoadedApps] = useState<Set<AppId>>(new Set())
   const [iframeStatus, setIframeStatus] = useState<Record<string, 'loading' | 'ready' | 'error'>>({})
-  const [iframeSrcs, setIframeSrcs] = useState<Record<string, string>>({})
-  const iframeRefs = useRef<Record<string, HTMLIFrameElement | null>>({})
   const timeoutRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
-  const ssoResolvedRef = useRef(false)
 
   const allowedApps = useMemo(
     () => ALL_APPS.filter(app => profile?.allowed_apps.includes(app.id)),
     [profile?.allowed_apps]
   )
 
-  // 허브 토큰을 한 번만 가져와서 캐시
-  useEffect(() => {
-    if (ssoResolvedRef.current) return
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return
-      ssoResolvedRef.current = true
-      const srcs: Record<string, string> = {}
-      for (const app of ALL_APPS) {
-        srcs[app.id] = `${app.url}#access_token=${session.access_token}&refresh_token=${session.refresh_token}&token_type=bearer&type=magiclink`
-      }
-      setIframeSrcs(srcs)
-    })
-  }, [])
-
+  // 첫 앱 자동 선택
   useEffect(() => {
     if (!activeApp && allowedApps.length > 0) {
       const firstApp = allowedApps[0].id
@@ -60,9 +42,7 @@ export function HubPage() {
   // 타임아웃 클린업
   useEffect(() => {
     const refs = timeoutRefs.current
-    return () => {
-      Object.values(refs).forEach(clearTimeout)
-    }
+    return () => { Object.values(refs).forEach(clearTimeout) }
   }, [])
 
   const startLoadTimeout = useCallback((appId: string) => {
@@ -85,14 +65,9 @@ export function HubPage() {
   }, [])
 
   const handleTabClick = (app: HubApp) => {
-    // 모바일: Safari ITP로 인해 iframe에서 localStorage 차단 → 새 탭으로 열기
-    if (isMobile) {
-      const ssoUrl = iframeSrcs[app.id] || app.url
-      window.open(ssoUrl, '_blank', 'noopener')
-      return
-    }
     setActiveApp(app.id)
     setShowAdmin(false)
+    setShowSettings(false)
     if (!loadedApps.has(app.id)) {
       setLoadedApps(prev => new Set([...prev, app.id]))
       setIframeStatus(prev => ({ ...prev, [app.id]: 'loading' }))
@@ -103,6 +78,13 @@ export function HubPage() {
   const handleAdminClick = () => {
     setActiveApp(null)
     setShowAdmin(true)
+    setShowSettings(false)
+  }
+
+  const handleSettingsClick = () => {
+    setActiveApp(null)
+    setShowAdmin(false)
+    setShowSettings(true)
   }
 
   const handleRetry = () => {
@@ -121,6 +103,30 @@ export function HubPage() {
 
   const currentStatus = activeApp ? (iframeStatus[activeApp] ?? 'loading') : null
 
+  if (showSettings) {
+    return (
+      <div className="hub-bg">
+        <Nav
+          allowedApps={allowedApps}
+          activeApp={null}
+          showAdmin={false}
+          showSettings={true}
+          isAdmin={profile?.role === 'admin'}
+          roleLabel={ROLE_LABEL[profile?.role || 'franchise']}
+          onTabClick={handleTabClick}
+          onAdminClick={handleAdminClick}
+          onSettingsClick={handleSettingsClick}
+        />
+        <Suspense fallback={null}>
+          <SettingsPage onBack={() => {
+            setShowSettings(false)
+            if (allowedApps.length > 0) setActiveApp(allowedApps[0].id)
+          }} />
+        </Suspense>
+      </div>
+    )
+  }
+
   if (showAdmin && profile?.role === 'admin') {
     return (
       <div className="hub-bg">
@@ -128,17 +134,20 @@ export function HubPage() {
           allowedApps={allowedApps}
           activeApp={null}
           showAdmin={true}
+          showSettings={false}
           isAdmin={profile.role === 'admin'}
           roleLabel={ROLE_LABEL[profile.role]}
           onTabClick={handleTabClick}
           onAdminClick={handleAdminClick}
-          onSignOut={signOut}
+          onSettingsClick={handleSettingsClick}
         />
         <div className="hub-content">
-          <AdminPage onBack={() => {
-            setShowAdmin(false)
-            if (allowedApps.length > 0) setActiveApp(allowedApps[0].id)
-          }} />
+          <Suspense fallback={null}>
+            <AdminPage onBack={() => {
+              setShowAdmin(false)
+              if (allowedApps.length > 0) setActiveApp(allowedApps[0].id)
+            }} />
+          </Suspense>
         </div>
       </div>
     )
@@ -150,11 +159,12 @@ export function HubPage() {
         allowedApps={allowedApps}
         activeApp={activeApp}
         showAdmin={false}
+        showSettings={false}
         isAdmin={profile?.role === 'admin'}
         roleLabel={ROLE_LABEL[profile?.role || 'franchise']}
         onTabClick={handleTabClick}
         onAdminClick={handleAdminClick}
-        onSignOut={signOut}
+        onSettingsClick={handleSettingsClick}
       />
 
       {/* 도구 바 */}
@@ -167,26 +177,7 @@ export function HubPage() {
         </div>
       )}
 
-      {/* 모바일: iframe 대신 앱 카드 런처 */}
-      {isMobile ? (
-        <div className="hub-mobile-launcher">
-          <p className="hub-mobile-launcher-hint">탭을 눌러 앱을 실행하세요</p>
-          <div className="hub-mobile-app-grid">
-            {allowedApps.map(app => (
-              <button
-                key={app.id}
-                className="hub-mobile-app-card"
-                onClick={() => handleTabClick(app)}
-                style={{ '--app-color': app.color } as React.CSSProperties}
-              >
-                <span className="hub-mobile-app-icon">{app.icon}</span>
-                <span className="hub-mobile-app-name">{app.name}</span>
-                <span className="hub-mobile-app-arrow">→</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : (
+      {/* iframe 영역 */}
       <div className="hub-iframe-wrap">
         {allowedApps.length === 0 && (
           <div className="hub-empty-state">
@@ -196,7 +187,6 @@ export function HubPage() {
           </div>
         )}
 
-        {/* Loading overlay */}
         {activeApp && currentStatus === 'loading' && (
           <div className="hub-iframe-overlay" role="status" aria-live="polite">
             <div className="hub-iframe-spinner" />
@@ -206,7 +196,6 @@ export function HubPage() {
           </div>
         )}
 
-        {/* Error overlay */}
         {activeApp && currentStatus === 'error' && (
           <div className="hub-iframe-overlay" role="alert">
             <div className="hub-iframe-error-icon">⚠️</div>
@@ -220,13 +209,13 @@ export function HubPage() {
           </div>
         )}
 
+        {/* 같은 도메인 프록시 경로로 iframe 로드 — localStorage 공유 */}
         {allowedApps.map(app => (
           loadedApps.has(app.id) && (
             <iframe
               key={app.id}
-              ref={el => { iframeRefs.current[app.id] = el }}
               className="hub-iframe"
-              src={iframeSrcs[app.id] || app.url}
+              src={app.proxyPath}
               title={app.name}
               style={{
                 display: activeApp === app.id ? 'block' : 'none',
@@ -235,12 +224,10 @@ export function HubPage() {
               onLoad={() => handleIframeLoad(app.id)}
               onError={() => handleIframeError(app.id)}
               allow="clipboard-write; clipboard-read"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
             />
           )
         ))}
       </div>
-      )}
 
       {/* 모바일 바텀 내비 */}
       <nav className="hub-bottom-nav" aria-label="앱 탐색">
@@ -267,12 +254,12 @@ export function HubPage() {
           </button>
         )}
         <button
-          className="hub-bottom-tab hub-bottom-tab-logout"
-          onClick={signOut}
-          aria-label="로그아웃"
+          className={`hub-bottom-tab ${showSettings ? 'active' : ''}`}
+          onClick={handleSettingsClick}
+          aria-label="설정"
         >
-          <span className="hub-bottom-tab-icon">🚪</span>
-          <span className="hub-bottom-tab-label">로그아웃</span>
+          <span className="hub-bottom-tab-icon">⚙</span>
+          <span className="hub-bottom-tab-label">설정</span>
         </button>
       </nav>
     </div>
@@ -284,20 +271,22 @@ function Nav({
   allowedApps,
   activeApp,
   showAdmin,
+  showSettings,
   isAdmin,
   roleLabel,
   onTabClick,
   onAdminClick,
-  onSignOut,
+  onSettingsClick,
 }: {
   allowedApps: HubApp[]
   activeApp: AppId | null
   showAdmin: boolean
+  showSettings: boolean
   isAdmin: boolean | undefined
   roleLabel: string
   onTabClick: (app: HubApp) => void
   onAdminClick: () => void
-  onSignOut: () => void
+  onSettingsClick: () => void
 }) {
   return (
     <nav className="hub-nav" aria-label="메인 네비게이션">
@@ -334,8 +323,12 @@ function Nav({
             ⚙️ 관리자
           </button>
         )}
-        <button className="hub-nav-btn signout-btn" onClick={onSignOut} aria-label="로그아웃">
-          로그아웃
+        <button
+          className={`hub-nav-btn settings-btn ${showSettings ? 'active' : ''}`}
+          onClick={onSettingsClick}
+          aria-label="설정"
+        >
+          ⚙ 설정
         </button>
       </div>
     </nav>

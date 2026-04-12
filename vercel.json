@@ -2,5 +2,22 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
-  "framework": "vite"
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/app/base", "destination": "/api/proxy?app=base" },
+    { "source": "/app/base/", "destination": "/api/proxy?app=base" },
+    { "source": "/app/order", "destination": "/api/proxy?app=order" },
+    { "source": "/app/order/", "destination": "/api/proxy?app=order" },
+    { "source": "/app/floor-plan", "destination": "/api/proxy?app=floor-plan" },
+    { "source": "/app/floor-plan/", "destination": "/api/proxy?app=floor-plan" },
+    { "source": "/app/store", "destination": "/api/proxy?app=store" },
+    { "source": "/app/store/", "destination": "/api/proxy?app=store" },
+
+    { "source": "/app/base/(.*)", "destination": "https://sunbi-base.vercel.app/$1" },
+    { "source": "/app/order/(.*)", "destination": "https://sunbi-crew-order.vercel.app/$1" },
+    { "source": "/app/floor-plan/(.*)", "destination": "https://sunbi-floor-plan.vercel.app/$1" },
+    { "source": "/app/store/(.*)", "destination": "https://sunbi-store-abb.vercel.app/$1" },
+
+    { "source": "/((?!app/).*)", "destination": "/index.html" }
+  ]
 }
