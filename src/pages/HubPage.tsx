@@ -54,7 +54,7 @@ export function HubPage() {
     }, IFRAME_LOAD_TIMEOUT_MS)
   }, [])
 
-  // iframe 로드 후 Supabase 세션 토큰 전달 (SSO)
+  // iframe 로드 후 Supabase 세션 토큰 전달 (SSO) — 재시도 포함
   const sendTokenToIframe = useCallback(async (appId: string) => {
     const iframe = iframeRefs.current[appId]
     if (!iframe?.contentWindow) return
@@ -62,11 +62,18 @@ export function HubPage() {
     if (!session) return
     const app = ALL_APPS.find(a => a.id === appId)
     if (!app) return
-    iframe.contentWindow.postMessage({
+
+    const message = {
       type: 'SUNBI_HUB_SESSION',
       access_token: session.access_token,
       refresh_token: session.refresh_token,
-    }, app.url)
+    }
+
+    // 즉시 전송 + 500ms, 1500ms 후 재전송 (iframe JS 초기화 타이밍 대응)
+    const send = () => iframe.contentWindow?.postMessage(message, app.url)
+    send()
+    setTimeout(send, 500)
+    setTimeout(send, 1500)
   }, [])
 
   const handleIframeLoad = useCallback((appId: string) => {
