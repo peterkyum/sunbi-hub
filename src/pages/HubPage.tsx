@@ -1,4 +1,5 @@
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 import { ALL_APPS, HubApp, AppId } from '../types'
 import { AdminPage } from './AdminPage'
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
@@ -53,10 +54,26 @@ export function HubPage() {
     }, IFRAME_LOAD_TIMEOUT_MS)
   }, [])
 
+  // iframe 로드 후 Supabase 세션 토큰 전달 (SSO)
+  const sendTokenToIframe = useCallback(async (appId: string) => {
+    const iframe = iframeRefs.current[appId]
+    if (!iframe?.contentWindow) return
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const app = ALL_APPS.find(a => a.id === appId)
+    if (!app) return
+    iframe.contentWindow.postMessage({
+      type: 'SUNBI_HUB_SESSION',
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    }, app.url)
+  }, [])
+
   const handleIframeLoad = useCallback((appId: string) => {
     if (timeoutRefs.current[appId]) clearTimeout(timeoutRefs.current[appId])
     setIframeStatus(prev => ({ ...prev, [appId]: 'ready' }))
-  }, [])
+    sendTokenToIframe(appId)
+  }, [sendTokenToIframe])
 
   const handleIframeError = useCallback((appId: string) => {
     if (timeoutRefs.current[appId]) clearTimeout(timeoutRefs.current[appId])
