@@ -38,7 +38,7 @@ export function HubPage() {
       ssoResolvedRef.current = true
       const srcs: Record<string, string> = {}
       for (const app of ALL_APPS) {
-        srcs[app.id] = `${app.url}#hub_token=${session.access_token}`
+        srcs[app.id] = `${app.url}#hub_token=${session.access_token}&hub_refresh=${session.refresh_token}`
       }
       setIframeSrcs(srcs)
     })
