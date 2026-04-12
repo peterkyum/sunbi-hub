@@ -12,7 +12,7 @@
   overflow: hidden;
 }
 
-/* ─── Navigation Bar ─── */
+/* ─── Navigation Bar (desktop) ─── */
 .hub-nav {
   display: flex;
   align-items: center;
@@ -53,8 +53,8 @@
 
 .hub-brand-role {
   font-size: 11px;
-  color: rgba(255,255,255,0.35);
-  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.07);
   padding: 3px 8px;
   border-radius: 6px;
   white-space: nowrap;
@@ -79,7 +79,7 @@
   padding: 8px 14px;
   border: none;
   background: transparent;
-  color: rgba(255,255,255,0.45);
+  color: rgba(255,255,255,0.55);
   font-size: 13px;
   font-weight: 600;
   font-family: 'Pretendard', sans-serif;
@@ -91,19 +91,19 @@
 }
 
 .hub-tab:hover {
-  color: rgba(255,255,255,0.7);
-  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.06);
 }
 
 .hub-tab.active {
   color: #fff;
-  background: rgba(232, 160, 32, 0.15);
+  background: rgba(232, 160, 32, 0.2);
 }
 
 .hub-tab.active::after {
   content: '';
   position: absolute;
-  bottom: -8px;
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   width: 24px;
@@ -151,8 +151,8 @@
 
 .signout-btn {
   background: rgba(255,255,255,0.04);
-  color: rgba(255,255,255,0.45);
-  border-color: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.55);
+  border-color: rgba(255,255,255,0.1);
 }
 
 .signout-btn:hover {
@@ -170,12 +170,12 @@
   height: 36px;
   min-height: 36px;
   background: rgba(255,255,255,0.02);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
 .hub-toolbar-label {
   font-size: 12px;
-  color: rgba(255,255,255,0.35);
+  color: rgba(255,255,255,0.5);
   font-weight: 500;
 }
 
@@ -191,7 +191,7 @@
   padding: 4px 8px;
   border-radius: 6px;
   cursor: pointer;
-  opacity: 0.5;
+  opacity: 0.6;
   transition: all 0.15s;
 }
 
@@ -214,6 +214,70 @@
   height: 100%;
   border: none;
   background: #fff;
+  transition: opacity 0.3s ease;
+}
+
+/* ─── iframe Loading / Error overlays ─── */
+.hub-iframe-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #0f0c08;
+}
+
+.hub-iframe-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(232, 160, 32, 0.2);
+  border-top-color: #E8A020;
+  border-radius: 50%;
+  animation: hub-spin 0.8s linear infinite;
+}
+
+@keyframes hub-spin {
+  to { transform: rotate(360deg); }
+}
+
+.hub-iframe-overlay-text {
+  font-size: 14px;
+  color: rgba(255,255,255,0.5);
+  margin: 0;
+}
+
+.hub-iframe-error-icon {
+  font-size: 48px;
+  opacity: 0.6;
+}
+
+.hub-iframe-overlay-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  margin: 0;
+}
+
+.hub-iframe-retry-btn {
+  margin-top: 8px;
+  padding: 10px 28px;
+  border-radius: 10px;
+  border: 1px solid rgba(232, 160, 32, 0.3);
+  background: rgba(232, 160, 32, 0.12);
+  color: #E8A020;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Pretendard', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hub-iframe-retry-btn:hover {
+  background: rgba(232, 160, 32, 0.25);
+  border-color: rgba(232, 160, 32, 0.5);
 }
 
 /* ─── Empty state ─── */
@@ -235,13 +299,13 @@
 .hub-empty-state h2 {
   font-size: 20px;
   font-weight: 700;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.5);
   margin: 0;
 }
 
 .hub-empty-state p {
   font-size: 14px;
-  color: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.35);
   margin: 0;
 }
 
@@ -251,45 +315,33 @@
   overflow-y: auto;
 }
 
+/* ─── Mobile bottom nav (hidden on desktop) ─── */
+.hub-bottom-nav {
+  display: none;
+}
+
 /* ─── Mobile ─── */
 @media (max-width: 768px) {
+  /* Hide desktop top nav tabs & right buttons on mobile */
   .hub-nav {
-    height: auto;
-    flex-direction: column;
-    padding: 10px 12px;
-    gap: 8px;
+    height: 48px;
+    min-height: 48px;
+    padding: 0 12px;
   }
 
   .hub-nav-left {
     width: 100%;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .hub-brand {
-    width: 100%;
-    justify-content: center;
   }
 
   .hub-tabs {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .hub-tab {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
-
-  .hub-tab-label {
     display: none;
   }
 
-  .hub-tab-icon {
-    font-size: 20px;
+  .hub-nav-right {
+    display: none;
   }
 
-  .hub-nav-right {
+  .hub-brand {
     width: 100%;
     justify-content: center;
   }
@@ -301,5 +353,50 @@
   .hub-toolbar {
     height: 30px;
     min-height: 30px;
+  }
+
+  /* Show bottom nav on mobile */
+  .hub-bottom-nav {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    background: rgba(15, 12, 8, 0.97);
+    border-top: 1px solid rgba(232, 160, 32, 0.12);
+    padding: 4px 0;
+    padding-bottom: env(safe-area-inset-bottom, 4px);
+    z-index: 200;
+    flex-shrink: 0;
+  }
+
+  .hub-bottom-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 8px;
+    min-width: 56px;
+    min-height: 48px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.45);
+    cursor: pointer;
+    transition: color 0.2s;
+    font-family: 'Pretendard', sans-serif;
+  }
+
+  .hub-bottom-tab.active {
+    color: #E8A020;
+  }
+
+  .hub-bottom-tab-icon {
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .hub-bottom-tab-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
   }
 }

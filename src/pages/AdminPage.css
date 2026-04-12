@@ -12,7 +12,6 @@
   padding: 20px 32px;
   background: rgba(255,255,255,0.03);
   border-bottom: 1px solid rgba(232,160,32,0.15);
-  sticky: top;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -23,7 +22,7 @@
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 10px;
   padding: 8px 16px;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255,255,255,0.7);
   font-size: 13px;
   font-family: 'Pretendard', sans-serif;
   cursor: pointer;
@@ -44,18 +43,72 @@
 }
 
 .admin-main {
-  padding: 40px 32px;
+  padding: 24px 32px 40px;
   max-width: 1200px;
   margin: 0 auto;
-  overflow-x: auto;
 }
 
-.admin-loading, .admin-empty {
-  text-align: center;
-  padding: 80px;
+/* ─── Search bar ���── */
+.admin-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.admin-search-input {
+  flex: 1;
+  max-width: 400px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 10px 16px;
+  color: #fff;
+  font-size: 14px;
+  font-family: 'Pretendard', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.admin-search-input:focus {
+  border-color: rgba(232,160,32,0.5);
+}
+
+.admin-search-input::placeholder {
   color: rgba(255,255,255,0.3);
 }
 
+.admin-search-count {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  white-space: nowrap;
+}
+
+/* ─── Loading / Empty ─��─ */
+.admin-loading, .admin-empty {
+  text-align: center;
+  padding: 80px 20px;
+  color: rgba(255,255,255,0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(232,160,32,0.2);
+  border-top-color: #E8A020;
+  border-radius: 50%;
+  animation: admin-spin 0.8s linear infinite;
+}
+
+@keyframes admin-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Table (desktop) ─── */
 .admin-table-wrap {
   overflow-x: auto;
 }
@@ -71,7 +124,7 @@
   text-align: left;
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.5);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -101,7 +154,7 @@
 
 .admin-user-id {
   font-size: 11px;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.4);
   font-family: monospace;
 }
 
@@ -122,15 +175,198 @@
   text-align: center;
 }
 
-.admin-checkbox {
-  width: 18px;
-  height: 18px;
-  accent-color: #E8A020;
+/* ─── Toggle switch (replaces small checkbox) ─── */
+.admin-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
   cursor: pointer;
 }
 
+.admin-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.admin-toggle-track {
+  width: 36px;
+  height: 20px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 10px;
+  transition: background 0.2s;
+  position: relative;
+}
+
+.admin-toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.admin-toggle input:checked + .admin-toggle-track {
+  background: rgba(232,160,32,0.35);
+}
+
+.admin-toggle input:checked + .admin-toggle-track::after {
+  left: 18px;
+  background: #E8A020;
+}
+
+.admin-toggle input:disabled + .admin-toggle-track {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Status cell ─── */
 .admin-status-cell {
   text-align: center;
-  color: rgba(255,255,255,0.3);
   font-size: 12px;
+}
+
+.admin-saving {
+  color: #E8A020;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.admin-saved {
+  color: rgba(255,255,255,0.3);
+}
+
+/* ─── Mobile card list (hidden on desktop) ─── */
+.admin-card-list {
+  display: none;
+}
+
+/* ─── Mobile ─── */
+@media (max-width: 768px) {
+  .admin-header {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .admin-title {
+    font-size: 16px;
+  }
+
+  .admin-back-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .admin-main {
+    padding: 16px;
+  }
+
+  .admin-search-input {
+    max-width: none;
+  }
+
+  /* Hide table on mobile */
+  .admin-table-wrap {
+    display: none;
+  }
+
+  /* Show card list on mobile */
+  .admin-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .admin-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .admin-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .admin-card-user {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .admin-card-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .admin-card-email {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    font-family: monospace;
+  }
+
+  .admin-card-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .admin-card-role {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .admin-card-role .admin-role-select {
+    width: 100%;
+  }
+
+  .admin-card-apps {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .admin-card-app-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .admin-card-app-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    cursor: pointer;
+    min-height: 44px;
+  }
+
+  .admin-card-app-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #E8A020;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .admin-card-app-name {
+    font-size: 13px;
+    color: rgba(255,255,255,0.8);
+  }
 }

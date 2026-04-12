@@ -1,7 +1,7 @@
 import { useAuth } from '../context/AuthContext'
 import { ALL_APPS, HubApp, AppId } from '../types'
 import { AdminPage } from './AdminPage'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import './HubPage.css'
 
 const ROLE_LABEL: Record<string, string> = {
@@ -11,30 +11,66 @@ const ROLE_LABEL: Record<string, string> = {
   franchise: '🏪 가맹점',
 }
 
+const IFRAME_LOAD_TIMEOUT_MS = 15_000
+
 export function HubPage() {
   const { profile, signOut } = useAuth()
   const [showAdmin, setShowAdmin] = useState(false)
   const [activeApp, setActiveApp] = useState<AppId | null>(null)
   const [loadedApps, setLoadedApps] = useState<Set<AppId>>(new Set())
+  const [iframeStatus, setIframeStatus] = useState<Record<string, 'loading' | 'ready' | 'error'>>({})
   const iframeRefs = useRef<Record<string, HTMLIFrameElement | null>>({})
+  const timeoutRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
-  const allowedApps = ALL_APPS.filter(app =>
-    profile?.allowed_apps.includes(app.id)
+  const allowedApps = useMemo(
+    () => ALL_APPS.filter(app => profile?.allowed_apps.includes(app.id)),
+    [profile?.allowed_apps]
   )
 
-  // 첫 번째 허용된 앱을 기본으로 선택
   useEffect(() => {
     if (!activeApp && allowedApps.length > 0) {
-      setActiveApp(allowedApps[0].id)
-      setLoadedApps(new Set([allowedApps[0].id]))
+      const firstApp = allowedApps[0].id
+      setActiveApp(firstApp)
+      setLoadedApps(new Set([firstApp]))
+      setIframeStatus(prev => ({ ...prev, [firstApp]: 'loading' }))
     }
   }, [allowedApps, activeApp])
+
+  // 타임아웃 클린업
+  useEffect(() => {
+    const refs = timeoutRefs.current
+    return () => {
+      Object.values(refs).forEach(clearTimeout)
+    }
+  }, [])
+
+  const startLoadTimeout = useCallback((appId: string) => {
+    if (timeoutRefs.current[appId]) clearTimeout(timeoutRefs.current[appId])
+    timeoutRefs.current[appId] = setTimeout(() => {
+      setIframeStatus(prev =>
+        prev[appId] === 'loading' ? { ...prev, [appId]: 'error' } : prev
+      )
+    }, IFRAME_LOAD_TIMEOUT_MS)
+  }, [])
+
+  const handleIframeLoad = useCallback((appId: string) => {
+    if (timeoutRefs.current[appId]) clearTimeout(timeoutRefs.current[appId])
+    setIframeStatus(prev => ({ ...prev, [appId]: 'ready' }))
+  }, [])
+
+  const handleIframeError = useCallback((appId: string) => {
+    if (timeoutRefs.current[appId]) clearTimeout(timeoutRefs.current[appId])
+    setIframeStatus(prev => ({ ...prev, [appId]: 'error' }))
+  }, [])
 
   const handleTabClick = (app: HubApp) => {
     setActiveApp(app.id)
     setShowAdmin(false)
-    // 한번 로드한 앱은 유지 (빠른 탭 전환)
-    setLoadedApps(prev => new Set([...prev, app.id]))
+    if (!loadedApps.has(app.id)) {
+      setLoadedApps(prev => new Set([...prev, app.id]))
+      setIframeStatus(prev => ({ ...prev, [app.id]: 'loading' }))
+      startLoadTimeout(app.id)
+    }
   }
 
   const handleAdminClick = () => {
@@ -44,7 +80,10 @@ export function HubPage() {
 
   const handleRefresh = () => {
     if (activeApp && iframeRefs.current[activeApp]) {
-      iframeRefs.current[activeApp]!.src = iframeRefs.current[activeApp]!.src
+      setIframeStatus(prev => ({ ...prev, [activeApp]: 'loading' }))
+      startLoadTimeout(activeApp)
+      const iframe = iframeRefs.current[activeApp]!
+      iframe.src = iframe.src
     }
   }
 
@@ -54,6 +93,22 @@ export function HubPage() {
       if (app) window.open(app.url, '_blank', 'noopener')
     }
   }
+
+  const handleRetry = () => {
+    if (!activeApp) return
+    setIframeStatus(prev => ({ ...prev, [activeApp]: 'loading' }))
+    startLoadTimeout(activeApp)
+    setLoadedApps(prev => {
+      const next = new Set(prev)
+      next.delete(activeApp)
+      return next
+    })
+    requestAnimationFrame(() => {
+      setLoadedApps(prev => new Set([...prev, activeApp]))
+    })
+  }
+
+  const currentStatus = activeApp ? (iframeStatus[activeApp] ?? 'loading') : null
 
   if (showAdmin && profile?.role === 'admin') {
     return (
@@ -99,19 +154,43 @@ export function HubPage() {
             {ALL_APPS.find(a => a.id === activeApp)?.name}
           </span>
           <div className="hub-toolbar-actions">
-            <button className="hub-tool-btn" onClick={handleRefresh} title="새로고침">🔄</button>
-            <button className="hub-tool-btn" onClick={handleOpenExternal} title="새 창에서 열기">↗️</button>
+            <button className="hub-tool-btn" onClick={handleRefresh} aria-label="새로고침" title="새로고침">🔄</button>
+            <button className="hub-tool-btn" onClick={handleOpenExternal} aria-label="새 창에서 열기" title="새 창에서 열기">↗️</button>
           </div>
         </div>
       )}
 
-      {/* iframe 컨테이너 — 로드된 앱은 display로 전환하여 상태 유지 */}
+      {/* iframe 컨테이너 */}
       <div className="hub-iframe-wrap">
         {allowedApps.length === 0 && (
           <div className="hub-empty-state">
             <div className="hub-empty-icon">🍜</div>
             <h2>접근 가능한 앱이 없습니다</h2>
             <p>본사에 문의하여 앱 접근 권한을 요청하세요.</p>
+          </div>
+        )}
+
+        {/* Loading overlay */}
+        {activeApp && currentStatus === 'loading' && (
+          <div className="hub-iframe-overlay" role="status" aria-live="polite">
+            <div className="hub-iframe-spinner" />
+            <p className="hub-iframe-overlay-text">
+              {ALL_APPS.find(a => a.id === activeApp)?.name} 불러오는 중...
+            </p>
+          </div>
+        )}
+
+        {/* Error overlay */}
+        {activeApp && currentStatus === 'error' && (
+          <div className="hub-iframe-overlay" role="alert">
+            <div className="hub-iframe-error-icon">⚠️</div>
+            <p className="hub-iframe-overlay-title">앱에 연결할 수 없습니다</p>
+            <p className="hub-iframe-overlay-text">
+              서버가 응답하지 않거나 네트워크 문제가 있습니다.
+            </p>
+            <button className="hub-iframe-retry-btn" onClick={handleRetry}>
+              다시 시도
+            </button>
           </div>
         )}
 
@@ -123,18 +202,49 @@ export function HubPage() {
               className="hub-iframe"
               src={app.url}
               title={app.name}
-              style={{ display: activeApp === app.id ? 'block' : 'none' }}
+              style={{
+                display: activeApp === app.id ? 'block' : 'none',
+                opacity: iframeStatus[app.id] === 'ready' ? 1 : 0,
+              }}
+              onLoad={() => handleIframeLoad(app.id)}
+              onError={() => handleIframeError(app.id)}
               allow="clipboard-write; clipboard-read"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
             />
           )
         ))}
       </div>
+
+      {/* 모바일 바텀 내비 */}
+      <nav className="hub-bottom-nav" aria-label="앱 탐색">
+        {allowedApps.map(app => (
+          <button
+            key={app.id}
+            className={`hub-bottom-tab ${activeApp === app.id ? 'active' : ''}`}
+            onClick={() => handleTabClick(app)}
+            aria-label={app.name}
+            aria-current={activeApp === app.id ? 'page' : undefined}
+          >
+            <span className="hub-bottom-tab-icon">{app.icon}</span>
+            <span className="hub-bottom-tab-label">{app.name}</span>
+          </button>
+        ))}
+        {profile?.role === 'admin' && (
+          <button
+            className={`hub-bottom-tab ${showAdmin ? 'active' : ''}`}
+            onClick={handleAdminClick}
+            aria-label="관리자"
+          >
+            <span className="hub-bottom-tab-icon">⚙️</span>
+            <span className="hub-bottom-tab-label">관리</span>
+          </button>
+        )}
+      </nav>
     </div>
   )
 }
 
-/* --- 네비게이션 컴포넌트 --- */
+/* --- 네비게이션 컴포넌트 (데스크탑) --- */
 function Nav({
   allowedApps,
   activeApp,
@@ -155,22 +265,25 @@ function Nav({
   onSignOut: () => void
 }) {
   return (
-    <nav className="hub-nav">
+    <nav className="hub-nav" aria-label="메인 네비게이션">
       <div className="hub-nav-left">
         <div className="hub-brand">
-          <span className="hub-brand-icon">🍜</span>
+          <span className="hub-brand-icon" aria-hidden="true">🍜</span>
           <span className="hub-brand-name">선비칼국수</span>
           <span className="hub-brand-role">{roleLabel}</span>
         </div>
-        <div className="hub-tabs">
+        <div className="hub-tabs" role="tablist">
           {allowedApps.map(app => (
             <button
               key={app.id}
               className={`hub-tab ${activeApp === app.id ? 'active' : ''}`}
               onClick={() => onTabClick(app)}
+              role="tab"
+              aria-selected={activeApp === app.id}
+              aria-label={app.name}
               style={{ '--tab-color': app.color } as React.CSSProperties}
             >
-              <span className="hub-tab-icon">{app.icon}</span>
+              <span className="hub-tab-icon" aria-hidden="true">{app.icon}</span>
               <span className="hub-tab-label">{app.name}</span>
             </button>
           ))}
@@ -181,11 +294,12 @@ function Nav({
           <button
             className={`hub-nav-btn admin-btn ${showAdmin ? 'active' : ''}`}
             onClick={onAdminClick}
+            aria-label="관리자 페이지"
           >
             ⚙️ 관리자
           </button>
         )}
-        <button className="hub-nav-btn signout-btn" onClick={onSignOut}>
+        <button className="hub-nav-btn signout-btn" onClick={onSignOut} aria-label="로그아웃">
           로그아웃
         </button>
       </div>
