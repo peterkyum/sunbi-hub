@@ -7,8 +7,8 @@ export interface HubApp {
   description: string
   icon: string
   url: string
+  proxyPath: string
   color: string
-  openInNewTab: boolean
 }
 
 // 역할 타입
@@ -29,8 +29,8 @@ export const ALL_APPS: HubApp[] = [
     description: '매장 재고 입출고 및 현황 관리',
     icon: '📦',
     url: 'https://sunbi-base.vercel.app',
+    proxyPath: '/app/base/',
     color: '#7B4A1E',
-    openInNewTab: true,
   },
   {
     id: 'sunbi-crew-order',
@@ -38,8 +38,8 @@ export const ALL_APPS: HubApp[] = [
     description: '가맹점 발주 및 주문 현황',
     icon: '🛒',
     url: 'https://sunbi-crew-order.vercel.app',
+    proxyPath: '/app/order/',
     color: '#E8A020',
-    openInNewTab: true,
   },
   {
     id: 'sunbi-floor-plan',
@@ -47,8 +47,8 @@ export const ALL_APPS: HubApp[] = [
     description: '매장 레이아웃 및 좌석 배치 관리',
     icon: '🗺️',
     url: 'https://sunbi-floor-plan.vercel.app',
+    proxyPath: '/app/floor-plan/',
     color: '#2D7DD2',
-    openInNewTab: true,
   },
   {
     id: 'sunbi-store-abb',
@@ -56,8 +56,8 @@ export const ALL_APPS: HubApp[] = [
     description: '가맹점 정보 및 약어 관리',
     icon: '🏪',
     url: 'https://sunbi-store-abb.vercel.app',
+    proxyPath: '/app/store/',
     color: '#3BB273',
-    openInNewTab: true,
   },
 ]
 
@@ -65,6 +65,6 @@ export const ALL_APPS: HubApp[] = [
 export const DEFAULT_ALLOWED_APPS: Record<UserRole, AppId[]> = {
   admin: ['sunbi-base', 'sunbi-crew-order', 'sunbi-floor-plan', 'sunbi-store-abb'],
   staff: ['sunbi-base', 'sunbi-crew-order', 'sunbi-floor-plan', 'sunbi-store-abb'],
-  distributor: ['sunbi-crew-order'],
+  distributor: ['sunbi-base', 'sunbi-crew-order'],
   franchise: ['sunbi-base', 'sunbi-crew-order'],
 }
