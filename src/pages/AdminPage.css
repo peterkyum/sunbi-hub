@@ -236,6 +236,11 @@
   cursor: not-allowed;
 }
 
+.admin-toggle-track.disabled-role {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
 /* ─── Status cell ─── */
 .admin-status-cell {
   text-align: center;
@@ -378,5 +383,10 @@
   .admin-card-app-name {
     font-size: 13px;
     color: #191F28;
+  }
+
+  .admin-card-app-item.disabled-role {
+    opacity: 0.35;
+    cursor: not-allowed;
   }
 }

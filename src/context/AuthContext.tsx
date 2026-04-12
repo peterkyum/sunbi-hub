@@ -58,11 +58,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return fallback
     }
 
+    const role = data.role as UserRole
+    const roleMaxApps = DEFAULT_ALLOWED_APPS[role]
+    const rawApps = ((data.allowed_apps as string[]) || roleMaxApps) as AppId[]
+    // 역할별 최대 허용 범위를 초과하는 앱 제거 (안전장치)
+    const safeApps = rawApps.filter(app => roleMaxApps.includes(app))
+
     const fetched: UserProfile = {
       user_id: data.user_id,
-      role: data.role,
+      role,
       name: data.name || '',
-      allowed_apps: ((data.allowed_apps as string[]) || DEFAULT_ALLOWED_APPS[(data.role as UserRole)]) as AppId[],
+      allowed_apps: safeApps,
     }
     setProfile(fetched)
     return fetched
@@ -119,10 +125,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // DB에서 세션 검증 (다른 기기 중복 로그인 여부만 확인)
         const valid = await verifySession(session.user.id)
         if (valid) {
-          // 현재 브라우저 인스턴스를 DB에 등록 (아직 없는 경우 덮어씀)
           await saveSessionToDb(session.user.id, browserInstanceId.current)
           startSessionCheck(session.user.id)
-          await fetchProfile(session.user.id)
+          const userProfile = await fetchProfile(session.user.id)
+          // iframe 앱용 공유 토큰 기록 (역할 포함)
+          try {
+            localStorage.setItem('sunbi_hub_token', JSON.stringify({
+              access_token: session.access_token,
+              email: session.user.email,
+              role: userProfile.role,
+            }))
+          } catch (_) { /* ignore */ }
         }
       }
       setLoading(false)
@@ -130,9 +143,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      if (!session?.user) {
+      if (session?.user) {
+        // iframe 앱용 공유 토큰 (같은 도메인이라 localStorage 공유됨)
+        // onAuthStateChange에서는 기존 profile 사용 (fetchProfile은 이미 완료됨)
+        const currentProfile = profile
+        try {
+          localStorage.setItem('sunbi_hub_token', JSON.stringify({
+            access_token: session.access_token,
+            email: session.user.email,
+            role: currentProfile?.role || 'franchise',
+          }))
+        } catch (_) { /* ignore */ }
+      } else {
         setProfile(null)
         stopSessionCheck()
+        try { localStorage.removeItem('sunbi_hub_token') } catch (_) { /* ignore */ }
+        try { localStorage.removeItem('sunbi_sso_init') } catch (_) { /* ignore */ }
       }
     })
 
@@ -166,6 +192,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     await supabase.auth.signOut()
     setProfile(null)
+    // iframe SSO 초기화 플래그 리셋 (다음 로그인 시 토큰 재전달)
+    try { localStorage.removeItem('sunbi_sso_init') } catch (_) { /* ignore */ }
   }
 
   const clearKickedOut = () => setKickedOut(false)

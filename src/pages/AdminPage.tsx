@@ -175,20 +175,23 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
                           ))}
                         </select>
                       </td>
-                      {ALL_APPS.map(app => (
-                        <td key={app.id} className="admin-toggle-cell">
-                          <label className="admin-toggle">
-                            <input
-                              type="checkbox"
-                              checked={user.allowed_apps.includes(app.id)}
-                              onChange={e => toggleApp(user.user_id, app.id, e.target.checked)}
-                              disabled={saving === user.user_id}
-                              aria-label={`${user.name || '사용자'} ${app.name} 접근 권한`}
-                            />
-                            <span className="admin-toggle-track" />
-                          </label>
-                        </td>
-                      ))}
+                      {ALL_APPS.map(app => {
+                        const roleAllowed = DEFAULT_ALLOWED_APPS[user.role].includes(app.id)
+                        return (
+                          <td key={app.id} className="admin-toggle-cell">
+                            <label className="admin-toggle" title={roleAllowed ? undefined : `${ROLE_OPTIONS.find(r => r.value === user.role)?.label} 역할에서 사용 불가`}>
+                              <input
+                                type="checkbox"
+                                checked={roleAllowed && user.allowed_apps.includes(app.id)}
+                                onChange={e => toggleApp(user.user_id, app.id, e.target.checked)}
+                                disabled={saving === user.user_id || !roleAllowed}
+                                aria-label={`${user.name || '사용자'} ${app.name} 접근 권한`}
+                              />
+                              <span className={`admin-toggle-track ${!roleAllowed ? 'disabled-role' : ''}`} />
+                            </label>
+                          </td>
+                        )
+                      })}
                       <td className="admin-status-cell">
                         {saving === user.user_id ? (
                           <span className="admin-saving">저장 중...</span>
@@ -231,17 +234,20 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
                   <div className="admin-card-apps">
                     <label className="admin-card-label">앱 권한</label>
                     <div className="admin-card-app-grid">
-                      {ALL_APPS.map(app => (
-                        <label key={app.id} className="admin-card-app-item">
-                          <input
-                            type="checkbox"
-                            checked={user.allowed_apps.includes(app.id)}
-                            onChange={e => toggleApp(user.user_id, app.id, e.target.checked)}
-                            disabled={saving === user.user_id}
-                          />
-                          <span className="admin-card-app-name">{app.icon} {app.name}</span>
-                        </label>
-                      ))}
+                      {ALL_APPS.map(app => {
+                        const roleAllowed = DEFAULT_ALLOWED_APPS[user.role].includes(app.id)
+                        return (
+                          <label key={app.id} className={`admin-card-app-item ${!roleAllowed ? 'disabled-role' : ''}`}>
+                            <input
+                              type="checkbox"
+                              checked={roleAllowed && user.allowed_apps.includes(app.id)}
+                              onChange={e => toggleApp(user.user_id, app.id, e.target.checked)}
+                              disabled={saving === user.user_id || !roleAllowed}
+                            />
+                            <span className="admin-card-app-name">{app.icon} {app.name}</span>
+                          </label>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>
