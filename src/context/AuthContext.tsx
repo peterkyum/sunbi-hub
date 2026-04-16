@@ -31,6 +31,9 @@ const getBrowserInstanceId = (): string => {
 
 const SESSION_CHECK_INTERVAL = 15_000 // 15초마다 DB 세션 검증
 
+// 공유 계정 — 중복 로그인 허용 (세션 검증 건너뜀)
+const SHARED_ACCOUNT_EMAILS = ['hq@sunbi.com']
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -39,6 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sessionCheckRef = useRef<ReturnType<typeof setInterval> | null>(null)
   // 현재 브라우저 인스턴스 ID (같은 브라우저 내 탭들은 동일)
   const browserInstanceId = useRef(getBrowserInstanceId())
+  // 프로필 최신값을 콜백에서 참조하기 위한 ref
+  const profileRef = useRef<UserProfile | null>(null)
 
   const fetchProfile = useCallback(async (userId: string): Promise<UserProfile> => {
     const { data, error } = await supabase
@@ -70,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: data.name || '',
       allowed_apps: safeApps,
     }
+    profileRef.current = fetched
     setProfile(fetched)
     return fetched
   }, [])
@@ -121,14 +127,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         setUser(session.user)
 
-        // Supabase 세션이 유효하면 → 바로 프로필 로드 (탭 간 공유 가능)
-        // DB에서 세션 검증 (다른 기기 중복 로그인 여부만 확인)
-        const valid = await verifySession(session.user.id)
-        if (valid) {
-          await saveSessionToDb(session.user.id, browserInstanceId.current)
-          startSessionCheck(session.user.id)
+        const isShared = SHARED_ACCOUNT_EMAILS.includes(
+          (session.user.email || '').toLowerCase()
+        )
+
+        if (isShared) {
+          // 공유 계정: 세션 검증 건너뜀 → 중복 로그인 허용
           const userProfile = await fetchProfile(session.user.id)
-          // iframe 앱용 공유 토큰 기록 (역할 포함)
           try {
             localStorage.setItem('sunbi_hub_token', JSON.stringify({
               access_token: session.access_token,
@@ -136,6 +141,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               role: userProfile.role,
             }))
           } catch (_) { /* ignore */ }
+        } else {
+          // 일반 계정: 기존 단일 세션 정책 유지
+          const valid = await verifySession(session.user.id)
+          if (valid) {
+            await saveSessionToDb(session.user.id, browserInstanceId.current)
+            startSessionCheck(session.user.id)
+            const userProfile = await fetchProfile(session.user.id)
+            try {
+              localStorage.setItem('sunbi_hub_token', JSON.stringify({
+                access_token: session.access_token,
+                email: session.user.email,
+                role: userProfile.role,
+              }))
+            } catch (_) { /* ignore */ }
+          }
         }
       }
       setLoading(false)
@@ -144,16 +164,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        // iframe 앱용 공유 토큰 (같은 도메인이라 localStorage 공유됨)
-        // onAuthStateChange에서는 기존 profile 사용 (fetchProfile은 이미 완료됨)
-        const currentProfile = profile
-        try {
-          localStorage.setItem('sunbi_hub_token', JSON.stringify({
-            access_token: session.access_token,
-            email: session.user.email,
-            role: currentProfile?.role || 'franchise',
-          }))
-        } catch (_) { /* ignore */ }
+        // profileRef로 최신 프로필 참조 (state closure는 stale할 수 있음)
+        const currentProfile = profileRef.current
+        // 프로필이 아직 로드되지 않았으면 토큰 갱신하지 않음 (초기 로드 시 위에서 별도 처리)
+        if (currentProfile) {
+          try {
+            localStorage.setItem('sunbi_hub_token', JSON.stringify({
+              access_token: session.access_token,
+              email: session.user.email,
+              role: currentProfile.role,
+            }))
+          } catch (_) { /* ignore */ }
+        }
       } else {
         setProfile(null)
         stopSessionCheck()
@@ -173,9 +195,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return { error: error.message }
 
     if (data.user) {
-      // 현재 브라우저 인스턴스 ID를 DB에 저장 → 다른 기기/브라우저의 기존 세션 무효화
-      await saveSessionToDb(data.user.id, browserInstanceId.current)
-      startSessionCheck(data.user.id)
+      const isShared = SHARED_ACCOUNT_EMAILS.includes(
+        (email || '').toLowerCase()
+      )
+      if (!isShared) {
+        // 일반 계정만 세션 관리 (공유 계정은 중복 로그인 허용)
+        await saveSessionToDb(data.user.id, browserInstanceId.current)
+        startSessionCheck(data.user.id)
+      }
       await fetchProfile(data.user.id)
     }
 
@@ -191,6 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('user_id', user.id)
     }
     await supabase.auth.signOut()
+    profileRef.current = null
     setProfile(null)
     // iframe SSO 초기화 플래그 리셋 (다음 로그인 시 토큰 재전달)
     try { localStorage.removeItem('sunbi_sso_init') } catch (_) { /* ignore */ }
