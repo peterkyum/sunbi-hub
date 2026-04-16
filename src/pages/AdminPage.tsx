@@ -44,7 +44,12 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
       setLoading(false)
       return
     }
-    setUsers(data as UserRow[])
+    // DB의 'hq' role → hub의 'admin'으로 매핑
+    const mapped = (data as UserRow[]).map(u => ({
+      ...u,
+      role: (u.role === 'hq' as unknown ? 'admin' : u.role) as UserRole,
+    }))
+    setUsers(mapped)
     setLoading(false)
   }
 

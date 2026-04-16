@@ -63,7 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return fallback
     }
 
-    const role = data.role as UserRole
+    // DB의 'hq' role을 hub의 'admin'으로 매핑 (발주앱은 'hq', 허브는 'admin' 사용)
+    const rawRole = data.role as string
+    const role: UserRole = rawRole === 'hq' ? 'admin' : rawRole as UserRole
     const roleMaxApps = DEFAULT_ALLOWED_APPS[role]
     const rawApps = ((data.allowed_apps as string[]) || roleMaxApps) as AppId[]
     // 역할별 최대 허용 범위를 초과하는 앱 제거 (안전장치)
