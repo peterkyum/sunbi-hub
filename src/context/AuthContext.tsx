@@ -139,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             localStorage.setItem('sunbi_hub_token', JSON.stringify({
               access_token: session.access_token,
+              refresh_token: session.refresh_token,
               email: session.user.email,
               role: userProfile.role,
             }))
@@ -173,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             localStorage.setItem('sunbi_hub_token', JSON.stringify({
               access_token: session.access_token,
+              refresh_token: session.refresh_token,
               email: session.user.email,
               role: currentProfile.role,
             }))
